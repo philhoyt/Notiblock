@@ -5,6 +5,11 @@
 	"author": "The WordPress Contributors",
 	"license": "GPL-2.0-or-later",
 	"main": "build/index.js",
+	"files": [
+		"build",
+		"notiblock.php",
+		"readme.txt"
+	],
 	"scripts": {
 		"build": "wp-scripts build --webpack-copy-php --blocks-manifest",
 		"format": "wp-scripts format",
