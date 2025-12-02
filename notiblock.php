@@ -53,7 +53,7 @@ function notiblock_get_settings() {
 	$settings = get_option( 'notiblock_global_notice', $defaults );
 
 	// Ensure all keys exist and have correct types.
-	$settings = wp_parse_args( $settings, $defaults );
+	$settings                = wp_parse_args( $settings, $defaults );
 	$settings['always_show'] = (bool) $settings['always_show'];
 
 	return $settings;
@@ -168,118 +168,6 @@ function create_block_notiblock_block_init() {
 add_action( 'init', 'create_block_notiblock_block_init' );
 
 /**
- * Render callback for the conditional block.
- * This ensures InnerBlocks are properly rendered.
- *
- * @param array    $attributes Block attributes.
- * @param string   $content    Block content (InnerBlocks).
- * @param WP_Block $block      Block instance.
- * @return string Rendered block HTML.
- */
-function notiblock_render_conditional_block( $attributes, $content, $block ) {
-	// Check if the notification should be displayed.
-	if ( ! function_exists( 'notiblock_is_active' ) ) {
-		return '';
-	}
-
-	$settings = notiblock_get_settings();
-	$is_active = notiblock_is_active( $settings );
-
-	// Debug logging.
-	error_log( 'Notiblock: Render callback called (PHP function)' );
-	error_log( 'Notiblock Debug - Settings: ' . print_r( $settings, true ) );
-	error_log( 'Notiblock Debug - Is Active: ' . ( $is_active ? 'true' : 'false' ) );
-	error_log( 'Notiblock Debug - Current Date: ' . current_time( 'Y-m-d' ) );
-	error_log( 'Notiblock Debug - Content empty: ' . ( empty( $content ) ? 'yes' : 'no' ) );
-	error_log( 'Notiblock Debug - Content length: ' . strlen( $content ) );
-
-	// Only render if active.
-	if ( ! $is_active ) {
-		error_log( 'Notiblock: Block is not active, returning empty' );
-		return '';
-	}
-
-	// If content is empty, try to render InnerBlocks manually.
-	if ( empty( trim( $content ) ) && isset( $block ) ) {
-		error_log( 'Notiblock: Content is empty, attempting to render InnerBlocks manually' );
-		$inner_content = '';
-		
-		// Try to access innerBlocks directly - WordPress should have already rendered them.
-		// First, try using the block's inner_blocks property (WP_Block object).
-		if ( ! empty( $block->inner_blocks ) && is_array( $block->inner_blocks ) ) {
-			error_log( 'Notiblock: Using inner_blocks property, count: ' . count( $block->inner_blocks ) );
-			foreach ( $block->inner_blocks as $inner_block ) {
-				if ( is_object( $inner_block ) && method_exists( $inner_block, 'render' ) ) {
-					$inner_content .= $inner_block->render();
-				} elseif ( is_array( $inner_block ) ) {
-					$inner_content .= render_block( $inner_block );
-				}
-			}
-		}
-		
-		// If that didn't work, try parsed_block.
-		if ( empty( $inner_content ) && isset( $block->parsed_block['innerBlocks'] ) ) {
-			$inner_blocks = $block->parsed_block['innerBlocks'];
-			error_log( 'Notiblock: Trying parsed_block innerBlocks, type: ' . gettype( $inner_blocks ) );
-			
-			if ( is_array( $inner_blocks ) ) {
-				$inner_blocks_count = count( $inner_blocks );
-				error_log( 'Notiblock: innerBlocks is array, count: ' . $inner_blocks_count );
-				
-				if ( $inner_blocks_count > 0 ) {
-					foreach ( $inner_blocks as $index => $inner_block ) {
-						error_log( 'Notiblock: Rendering inner block ' . $index );
-						if ( is_array( $inner_block ) ) {
-							$rendered = render_block( $inner_block );
-							error_log( 'Notiblock: Rendered block ' . $index . ', length: ' . strlen( $rendered ) );
-							$inner_content .= $rendered;
-						}
-					}
-				} else {
-					error_log( 'Notiblock: innerBlocks array is empty' );
-				}
-			} else {
-				error_log( 'Notiblock: innerBlocks is not an array, value: ' . print_r( $inner_blocks, true ) );
-			}
-		}
-		
-		// Try render_inner_blocks method if available.
-		if ( empty( $inner_content ) && method_exists( $block, 'render_inner_blocks' ) ) {
-			error_log( 'Notiblock: Trying render_inner_blocks method' );
-			$inner_content = $block->render_inner_blocks();
-		}
-		
-		// Last resort: try to use innerHTML or innerContent from parsed_block.
-		if ( empty( $inner_content ) && isset( $block->parsed_block['innerHTML'] ) ) {
-			error_log( 'Notiblock: Trying innerHTML from parsed_block' );
-			$inner_content = $block->parsed_block['innerHTML'];
-		}
-		
-		if ( ! empty( $inner_content ) ) {
-			error_log( 'Notiblock: Successfully rendered InnerBlocks, length: ' . strlen( $inner_content ) );
-			$content = $inner_content;
-		} else {
-			error_log( 'Notiblock: Failed to render InnerBlocks - dumping parsed_block: ' . print_r( $block->parsed_block, true ) );
-		}
-	}
-
-	// If content is still empty, render nothing.
-	if ( empty( trim( $content ) ) ) {
-		error_log( 'Notiblock: Content is still empty after InnerBlocks rendering attempt' );
-		return '';
-	}
-
-	error_log( 'Notiblock: Rendering block with content length: ' . strlen( $content ) );
-
-	$wrapper_attributes = get_block_wrapper_attributes();
-	return sprintf(
-		'<div %s>%s</div>',
-		$wrapper_attributes,
-		$content
-	);
-}
-
-/**
  * Registers REST API endpoint for fetching Notiblock settings.
  */
 function notiblock_register_rest_routes() {
@@ -289,7 +177,7 @@ function notiblock_register_rest_routes() {
 		array(
 			'methods'             => 'GET',
 			'callback'            => 'notiblock_rest_get_settings',
-			'permission_callback' => function() {
+			'permission_callback' => function () {
 				return current_user_can( 'edit_posts' );
 			},
 		)
@@ -337,8 +225,10 @@ function notiblock_dashboard_widget_callback() {
 	// Handle form submission.
 	if ( isset( $_POST['notiblock_save_settings'] ) && check_admin_referer( 'notiblock_save_settings', 'notiblock_nonce' ) ) {
 		if ( current_user_can( 'manage_options' ) ) {
+			// Note: Content is intentionally not sanitized here as it will be sanitized
+			// with wp_kses_post() in notiblock_save_settings() to preserve rich text formatting.
 			$data = array(
-				'content'     => isset( $_POST['notiblock_content'] ) ? wp_unslash( $_POST['notiblock_content'] ) : '',
+				'content'     => isset( $_POST['notiblock_content'] ) ? wp_unslash( $_POST['notiblock_content'] ) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 				'start_date'  => isset( $_POST['notiblock_start_date'] ) ? sanitize_text_field( wp_unslash( $_POST['notiblock_start_date'] ) ) : '',
 				'end_date'    => isset( $_POST['notiblock_end_date'] ) ? sanitize_text_field( wp_unslash( $_POST['notiblock_end_date'] ) ) : '',
 				'always_show' => isset( $_POST['notiblock_always_show'] ),

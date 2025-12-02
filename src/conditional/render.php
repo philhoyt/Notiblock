@@ -7,6 +7,7 @@
  *     $content (string): The block default content (InnerBlocks rendered content).
  *     $block (WP_Block): The block instance.
  *
+ * @package Notiblock
  * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
  */
 
@@ -16,7 +17,7 @@ if ( ! function_exists( 'notiblock_is_active' ) ) {
 	return;
 }
 
-$settings = notiblock_get_settings();
+$settings  = notiblock_get_settings();
 $is_active = notiblock_is_active( $settings );
 
 // Only render if active.
@@ -38,7 +39,7 @@ if ( empty( trim( $content ) ) && isset( $block ) ) {
 			}
 		}
 	}
-	
+
 	// If that didn't work, try parsed_block.
 	if ( empty( trim( $content ) ) && isset( $block->parsed_block['innerBlocks'] ) && is_array( $block->parsed_block['innerBlocks'] ) ) {
 		$content = '';
