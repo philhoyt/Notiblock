@@ -63,7 +63,7 @@ function notiblock_get_settings() {
  * Sanitizes and saves Notiblock settings.
  *
  * @param array $data Raw settings data to sanitize and save.
- * @return bool True on success, false on failure.
+ * @return bool|WP_Error True on success, WP_Error on validation failure, false on save failure.
  */
 function notiblock_save_settings( $data ) {
 	$sanitized = array(
@@ -79,6 +79,16 @@ function notiblock_save_settings( $data ) {
 	}
 	if ( ! empty( $sanitized['end_date'] ) && ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $sanitized['end_date'] ) ) {
 		$sanitized['end_date'] = '';
+	}
+
+	// Validate that end_date is after start_date (if both are provided and not using always_show).
+	if ( ! $sanitized['always_show'] && ! empty( $sanitized['start_date'] ) && ! empty( $sanitized['end_date'] ) ) {
+		if ( $sanitized['end_date'] < $sanitized['start_date'] ) {
+			return new WP_Error(
+				'invalid_date_range',
+				__( 'End date must be after start date.', 'notiblock' )
+			);
+		}
 	}
 
 	return update_option( 'notiblock_global_notice', $sanitized );
@@ -234,10 +244,17 @@ function notiblock_dashboard_widget_callback() {
 				'always_show' => isset( $_POST['notiblock_always_show'] ),
 			);
 
-			if ( notiblock_save_settings( $data ) ) {
+			$result = notiblock_save_settings( $data );
+
+			if ( is_wp_error( $result ) ) {
+				// Validation error.
+				$message = '<div class="notice notice-error inline"><p>' . esc_html( $result->get_error_message() ) . '</p></div>';
+			} elseif ( $result ) {
+				// Success.
 				$settings = notiblock_get_settings(); // Refresh settings.
 				$message  = '<div class="notice notice-success inline"><p>' . esc_html__( 'Settings saved successfully.', 'notiblock' ) . '</p></div>';
 			} else {
+				// Save failure.
 				$message = '<div class="notice notice-error inline"><p>' . esc_html__( 'Error saving settings.', 'notiblock' ) . '</p></div>';
 			}
 		}
