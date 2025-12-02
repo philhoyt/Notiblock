@@ -40,9 +40,21 @@ add_filter( 'block_categories_all', 'notiblock_register_block_category', 10, 1 )
 /**
  * Retrieves and validates the Notiblock global notice settings.
  *
+ * Uses static caching to avoid multiple database queries within the same request.
+ * WordPress also caches get_option() calls automatically, but this adds an extra layer
+ * of efficiency for the processing/validation step.
+ *
+ * @param bool $force_refresh Optional. If true, bypasses static cache. Default false.
  * @return array Settings array with 'content', 'start_date', 'end_date', and 'always_show' keys.
  */
-function notiblock_get_settings() {
+function notiblock_get_settings( $force_refresh = false ) {
+	static $cached_settings = null;
+
+	// Return cached settings if available (same request) and not forcing refresh.
+	if ( ! $force_refresh && null !== $cached_settings ) {
+		return $cached_settings;
+	}
+
 	$defaults = array(
 		'content'     => '',
 		'start_date'  => '',
@@ -55,6 +67,9 @@ function notiblock_get_settings() {
 	// Ensure all keys exist and have correct types.
 	$settings                = wp_parse_args( $settings, $defaults );
 	$settings['always_show'] = (bool) $settings['always_show'];
+
+	// Cache for this request.
+	$cached_settings = $settings;
 
 	return $settings;
 }
@@ -91,7 +106,17 @@ function notiblock_save_settings( $data ) {
 		}
 	}
 
-	return update_option( 'notiblock_global_notice', $sanitized );
+	// Save option with autoload enabled for optimal performance.
+	// This ensures the option is loaded with other autoloaded options at request start.
+	$result = update_option( 'notiblock_global_notice', $sanitized, true );
+
+	// Clear static cache by forcing a refresh (if save was successful).
+	// This ensures fresh data is available immediately after save in the same request.
+	if ( $result ) {
+		notiblock_get_settings( true );
+	}
+
+	return $result;
 }
 
 /**
@@ -250,8 +275,8 @@ function notiblock_dashboard_widget_callback() {
 				// Validation error.
 				$message = '<div class="notice notice-error inline"><p>' . esc_html( $result->get_error_message() ) . '</p></div>';
 			} elseif ( $result ) {
-				// Success.
-				$settings = notiblock_get_settings(); // Refresh settings.
+				// Success - force refresh to get updated settings (cache was cleared in save function).
+				$settings = notiblock_get_settings( true );
 				$message  = '<div class="notice notice-success inline"><p>' . esc_html__( 'Settings saved successfully.', 'notiblock' ) . '</p></div>';
 			} else {
 				// Save failure.
