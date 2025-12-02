@@ -18,6 +18,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Determines if Notiblock should use network-wide settings in multisite.
+ *
+ * Can be overridden by defining NOTIBLOCK_NETWORK_WIDE constant:
+ * define( 'NOTIBLOCK_NETWORK_WIDE', true ); // Use network-wide settings
+ *
+ * Or via filter:
+ * add_filter( 'notiblock_use_network_settings', '__return_true' );
+ *
+ * @return bool True to use network-wide settings, false for per-site settings.
+ */
+function notiblock_use_network_settings() {
+	// Check if multisite is active.
+	if ( ! is_multisite() ) {
+		return false;
+	}
+
+	// Allow constant override.
+	if ( defined( 'NOTIBLOCK_NETWORK_WIDE' ) ) {
+		return (bool) constant( 'NOTIBLOCK_NETWORK_WIDE' );
+	}
+
+	// Allow filter override (defaults to false for per-site settings).
+	return apply_filters( 'notiblock_use_network_settings', false );
+}
+
+/**
  * Registers a custom block category for Notiblock blocks.
  *
  * @param array $categories Array of block categories.
@@ -41,8 +67,15 @@ add_filter( 'block_categories_all', 'notiblock_register_block_category', 10, 1 )
  * Retrieves and validates the Notiblock global notice settings.
  *
  * Uses static caching to avoid multiple database queries within the same request.
- * WordPress also caches get_option() calls automatically, but this adds an extra layer
- * of efficiency for the processing/validation step.
+ * WordPress also caches get_option()/get_site_option() calls automatically, but this adds
+ * an extra layer of efficiency for the processing/validation step.
+ *
+ * In multisite installations, can use either:
+ * - Per-site settings (default): Each site has its own notification settings
+ * - Network-wide settings: All sites share the same notification settings
+ *
+ * To enable network-wide settings, define NOTIBLOCK_NETWORK_WIDE constant or use the
+ * 'notiblock_use_network_settings' filter.
  *
  * @param bool $force_refresh Optional. If true, bypasses static cache. Default false.
  * @return array Settings array with 'content', 'start_date', 'end_date', and 'always_show' keys.
@@ -62,7 +95,14 @@ function notiblock_get_settings( $force_refresh = false ) {
 		'always_show' => false,
 	);
 
-	$settings = get_option( 'notiblock_global_notice', $defaults );
+	// Use network-wide or per-site option based on configuration.
+	if ( notiblock_use_network_settings() ) {
+		$settings = get_site_option( 'notiblock_global_notice', $defaults );
+	} elseif ( is_multisite() ) {
+		$settings = get_option( 'notiblock_global_notice', $defaults );
+	} else {
+		$settings = get_option( 'notiblock_global_notice', $defaults );
+	}
 
 	// Ensure all keys exist and have correct types.
 	$settings                = wp_parse_args( $settings, $defaults );
@@ -77,10 +117,28 @@ function notiblock_get_settings( $force_refresh = false ) {
 /**
  * Sanitizes and saves Notiblock settings.
  *
+ * In multisite with network-wide settings enabled, only network admins can save.
+ * With per-site settings, site admins can save for their site.
+ *
  * @param array $data Raw settings data to sanitize and save.
  * @return bool|WP_Error True on success, WP_Error on validation failure, false on save failure.
  */
 function notiblock_save_settings( $data ) {
+	// Check capability based on network-wide or per-site mode.
+	if ( notiblock_use_network_settings() && ! current_user_can( 'manage_network_options' ) ) {
+		// Network-wide: require network admin capability.
+		return new WP_Error(
+			'insufficient_permissions',
+			__( 'You do not have permission to save network-wide settings.', 'notiblock' )
+		);
+	} elseif ( ! notiblock_use_network_settings() && ! current_user_can( 'manage_options' ) ) {
+		// Per-site: require site admin capability.
+		return new WP_Error(
+			'insufficient_permissions',
+			__( 'You do not have permission to save settings.', 'notiblock' )
+		);
+	}
+
 	$sanitized = array(
 		'content'     => wp_kses_post( isset( $data['content'] ) ? $data['content'] : '' ),
 		'start_date'  => sanitize_text_field( isset( $data['start_date'] ) ? $data['start_date'] : '' ),
@@ -107,8 +165,12 @@ function notiblock_save_settings( $data ) {
 	}
 
 	// Save option with autoload enabled for optimal performance.
-	// This ensures the option is loaded with other autoloaded options at request start.
-	$result = update_option( 'notiblock_global_notice', $sanitized, true );
+	// Use network-wide or per-site option based on configuration.
+	if ( notiblock_use_network_settings() ) {
+		$result = update_site_option( 'notiblock_global_notice', $sanitized );
+	} else {
+		$result = update_option( 'notiblock_global_notice', $sanitized, true );
+	}
 
 	// Clear static cache by forcing a refresh (if save was successful).
 	// This ensures fresh data is available immediately after save in the same request.
@@ -204,6 +266,11 @@ add_action( 'init', 'notiblock_register_blocks' );
 
 /**
  * Registers REST API endpoint for fetching Notiblock settings.
+ *
+ * Permission: Requires 'edit_posts' capability. This allows editors to preview
+ * the notification message in the block editor. The settings themselves are
+ * public-facing (displayed on the frontend) and can only be modified by users
+ * with 'manage_options' capability via the dashboard widget.
  */
 function notiblock_register_rest_routes() {
 	register_rest_route(
@@ -213,6 +280,8 @@ function notiblock_register_rest_routes() {
 			'methods'             => 'GET',
 			'callback'            => 'notiblock_rest_get_settings',
 			'permission_callback' => function () {
+				// Allow users who can edit posts to preview the notification in the editor.
+				// Settings are public-facing and only modifiable by admins.
 				return current_user_can( 'edit_posts' );
 			},
 		)
@@ -232,9 +301,21 @@ function notiblock_rest_get_settings() {
 
 /**
  * Registers the Notiblock dashboard widget.
+ *
+ * In network-wide mode, only shows on network admin dashboard.
+ * In per-site mode, shows on individual site dashboards.
  */
 function notiblock_register_dashboard_widget() {
-	if ( current_user_can( 'manage_options' ) ) {
+	// Check if we're in network-wide mode.
+	if ( notiblock_use_network_settings() && is_network_admin() && current_user_can( 'manage_network_options' ) ) {
+		// Network-wide: only show on network admin dashboard.
+		wp_add_dashboard_widget(
+			'notiblock_dashboard_widget',
+			__( 'Notiblock Settings (Network-wide)', 'notiblock' ),
+			'notiblock_dashboard_widget_callback'
+		);
+	} elseif ( ! notiblock_use_network_settings() && current_user_can( 'manage_options' ) ) {
+		// Per-site: show on individual site dashboards.
 		wp_add_dashboard_widget(
 			'notiblock_dashboard_widget',
 			__( 'Notiblock Settings', 'notiblock' ),
@@ -249,8 +330,10 @@ add_action( 'wp_dashboard_setup', 'notiblock_register_dashboard_widget' );
  * Displays the form and handles form submission.
  */
 function notiblock_dashboard_widget_callback() {
-	// Check capability.
-	if ( ! current_user_can( 'manage_options' ) ) {
+	// Check capability based on network-wide or per-site mode.
+	if ( notiblock_use_network_settings() && ! current_user_can( 'manage_network_options' ) ) {
+		return;
+	} elseif ( ! notiblock_use_network_settings() && ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
 
@@ -259,7 +342,12 @@ function notiblock_dashboard_widget_callback() {
 
 	// Handle form submission.
 	if ( isset( $_POST['notiblock_save_settings'] ) && check_admin_referer( 'notiblock_save_settings', 'notiblock_nonce' ) ) {
-		if ( current_user_can( 'manage_options' ) ) {
+		// Capability check is handled in notiblock_save_settings(), but we check here too for early exit.
+		$can_save = notiblock_use_network_settings()
+			? current_user_can( 'manage_network_options' )
+			: current_user_can( 'manage_options' );
+
+		if ( $can_save ) {
 			// Note: Content is intentionally not sanitized here as it will be sanitized
 			// with wp_kses_post() in notiblock_save_settings() to preserve rich text formatting.
 			$data = array(
@@ -288,6 +376,14 @@ function notiblock_dashboard_widget_callback() {
 	// Display message if any.
 	if ( $message ) {
 		echo wp_kses_post( $message );
+	}
+
+	// Show notice if in network-wide mode.
+	if ( notiblock_use_network_settings() ) {
+		echo '<div class="notice notice-info inline"><p>';
+		echo '<strong>' . esc_html__( 'Network-wide Mode:', 'notiblock' ) . '</strong> ';
+		echo esc_html__( 'These settings apply to all sites in the network.', 'notiblock' );
+		echo '</p></div>';
 	}
 	?>
 
