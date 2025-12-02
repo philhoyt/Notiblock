@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "notiblock/message",
+	"version": "0.1.0",
+	"title": "Notiblock Message",
+	"category": "notiblock",
+	"icon": "megaphone",
+	"description": "Displays the global notification message configured in the Dashboard widget. Only available inside the Notiblock Conditional block.",
+	"example": {},
+	"parent": [ "notiblock/conditional" ],
+	"supports": {
+		"html": false
+	},
+	"textdomain": "notiblock",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
+
