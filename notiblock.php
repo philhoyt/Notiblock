@@ -1,11 +1,13 @@
 <?php
 /**
  * Plugin Name:       Notiblock
+ * Plugin URI:        https://github.com/philhoyt/Notiblock
  * Description:       Conditional notification blocks with dashboard widget configuration.
  * Version:           0.1.0
  * Requires at least: 6.7
  * Requires PHP:      7.4
  * Author:            Phil Hoyt
+ * Author URI:        https://philhoyt.com
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       notiblock
