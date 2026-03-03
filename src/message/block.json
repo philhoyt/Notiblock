@@ -6,9 +6,8 @@
 	"title": "Notiblock Message",
 	"category": "notiblock",
 	"icon": "megaphone",
-	"description": "Displays the global notification message configured in the Dashboard widget. Only available inside the Notiblock Conditional block.",
+	"description": "Displays the global notification message configured in the Dashboard widget.",
 	"example": {},
-	"parent": [ "notiblock/conditional" ],
 	"supports": {
 		"html": false
 	},
