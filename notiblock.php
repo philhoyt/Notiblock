@@ -3,7 +3,7 @@
  * Plugin Name:       Notiblock
  * Plugin URI:        https://github.com/philhoyt/Notiblock
  * Description:       Conditional notification blocks with dashboard widget configuration.
- * Version:           0.1.0
+ * Version:           1.0.0
  * Requires at least: 6.7
  * Requires PHP:      7.4
  * Author:            Phil Hoyt
@@ -17,6 +17,19 @@
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
+}
+
+// Plugin Update Checker — GitHub release-based auto-updates.
+$notiblock_puc = plugin_dir_path( __FILE__ ) . 'lib/plugin-update-checker/plugin-update-checker.php';
+if ( file_exists( $notiblock_puc ) ) {
+	require_once $notiblock_puc;
+
+	$notiblock_update_checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+		'https://github.com/philhoyt/Notiblock/',
+		__FILE__,
+		'notiblock'
+	);
+	$notiblock_update_checker->getVcsApi()->enableReleaseAssets();
 }
 
 /**
@@ -295,10 +308,22 @@ function notiblock_register_rest_routes() {
 						: current_user_can( 'manage_options' );
 				},
 				'args'                => array(
-					'content'     => array( 'type' => 'string', 'default' => '' ),
-					'start_date'  => array( 'type' => 'string', 'default' => '' ),
-					'end_date'    => array( 'type' => 'string', 'default' => '' ),
-					'always_show' => array( 'type' => 'boolean', 'default' => false ),
+					'content'     => array(
+						'type'    => 'string',
+						'default' => '',
+					),
+					'start_date'  => array(
+						'type'    => 'string',
+						'default' => '',
+					),
+					'end_date'    => array(
+						'type'    => 'string',
+						'default' => '',
+					),
+					'always_show' => array(
+						'type'    => 'boolean',
+						'default' => false,
+					),
 				),
 			),
 		)

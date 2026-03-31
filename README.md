@@ -2,62 +2,33 @@
 
 Conditional notification blocks for WordPress with dashboard widget configuration.
 
-## Installation
+## Description
 
-1. Download the latest release
-2. Upload `notiblock.zip` via **Plugins → Add New → Upload Plugin**
-3. Activate the plugin
+Notiblock adds two blocks to the editor: a conditional wrapper that shows or hides its contents based on a date range, and a message block that displays a globally configured notification. Set the message and date range once in the dashboard widget or settings page, then place the blocks wherever the notification should appear.
 
-## Usage
+ ## Installation
 
-1. **Configure the notification:**
-   - Go to **Dashboard → Notiblock Settings** widget
-   - Enter your message, set start/end dates, and save
+1. Download the latest `notiblock.zip` from the [releases page](https://github.com/philhoyt/notiblock/releases).
+2. Go to **Plugins → Add New → Upload Plugin** and upload the zip file.
+3. Activate through the Plugins screen.
+4. Go to **Dashboard → Notiblock Settings** or **Settings → Notiblock** to configure your message and date range.
 
-   ![Dashboard Widget](assets/dashboard-widget.png)
+## Blocks
 
-2. **Add the block:**
-   - Edit any post, page, or template
-   - Add the **Notiblock Conditional** block
-   - The notification displays when the current date is within your date range
+**Notiblock Conditional** — The wrapper block. Handles the date logic and conditionally renders its contents.
 
-### Blocks
-
-- **Notiblock Conditional** - Wrapper block that conditionally displays content based on date settings
-- **Notiblock Message** - Displays the global notification message (only available inside Conditional block)
+**Notiblock Message** — Displays the globally configured notification message. Only available inside a Conditional block.
 
 ## Development
-
-### Setup
-
 ```bash
 npm install
 ```
-
-### Build
-
 ```bash
-# Development (watch mode)
-npm start
-
-# Production build
-npm run build
-
-# Create plugin zip
-npm run plugin-zip
-```
-
-### Project Structure
-
-```
-notiblock/
-├── build/              # Compiled files (generated)
-├── src/
-│   ├── conditional/    # Conditional wrapper block
-│   └── message/        # Message display block
-└── notiblock.php      # Main plugin file
+npm start          # Development build with watch
+npm run build      # Production build
+npm run plugin-zip # Create plugin zip
 ```
 
 ## License
 
-GPL v2 or later
+GPL-2.0-or-later
