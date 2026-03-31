@@ -267,25 +267,40 @@ function notiblock_register_blocks() {
 add_action( 'init', 'notiblock_register_blocks' );
 
 /**
- * Registers REST API endpoint for fetching Notiblock settings.
+ * Registers REST API endpoints for Notiblock settings.
  *
- * Permission: Requires 'edit_posts' capability. This allows editors to preview
- * the notification message in the block editor. The settings themselves are
- * public-facing (displayed on the frontend) and can only be modified by users
- * with 'manage_options' capability via the dashboard widget.
+ * GET  /notiblock/v1/settings — Requires 'edit_posts'. Used by the block editor
+ *                               to preview the notification message.
+ * POST /notiblock/v1/settings — Requires 'manage_options' (or 'manage_network_options'
+ *                               in network-wide mode). Used by the admin React app.
  */
 function notiblock_register_rest_routes() {
 	register_rest_route(
 		'notiblock/v1',
 		'/settings',
 		array(
-			'methods'             => 'GET',
-			'callback'            => 'notiblock_rest_get_settings',
-			'permission_callback' => function () {
-				// Allow users who can edit posts to preview the notification in the editor.
-				// Settings are public-facing and only modifiable by admins.
-				return current_user_can( 'edit_posts' );
-			},
+			array(
+				'methods'             => 'GET',
+				'callback'            => 'notiblock_rest_get_settings',
+				'permission_callback' => function () {
+					return current_user_can( 'edit_posts' );
+				},
+			),
+			array(
+				'methods'             => 'POST',
+				'callback'            => 'notiblock_rest_save_settings',
+				'permission_callback' => function () {
+					return notiblock_use_network_settings()
+						? current_user_can( 'manage_network_options' )
+						: current_user_can( 'manage_options' );
+				},
+				'args'                => array(
+					'content'     => array( 'type' => 'string', 'default' => '' ),
+					'start_date'  => array( 'type' => 'string', 'default' => '' ),
+					'end_date'    => array( 'type' => 'string', 'default' => '' ),
+					'always_show' => array( 'type' => 'boolean', 'default' => false ),
+				),
+			),
 		)
 	);
 }
@@ -297,8 +312,42 @@ add_action( 'rest_api_init', 'notiblock_register_rest_routes' );
  * @return WP_REST_Response Settings data.
  */
 function notiblock_rest_get_settings() {
-	$settings = notiblock_get_settings();
-	return rest_ensure_response( $settings );
+	return rest_ensure_response( notiblock_get_settings() );
+}
+
+/**
+ * REST API callback to save Notiblock settings.
+ *
+ * @param WP_REST_Request $request Request object.
+ * @return WP_REST_Response|WP_Error Updated settings on success, WP_Error on failure.
+ */
+function notiblock_rest_save_settings( $request ) {
+	$data = array(
+		'content'     => $request->get_param( 'content' ),
+		'start_date'  => $request->get_param( 'start_date' ),
+		'end_date'    => $request->get_param( 'end_date' ),
+		'always_show' => $request->get_param( 'always_show' ),
+	);
+
+	$result = notiblock_save_settings( $data );
+
+	if ( is_wp_error( $result ) ) {
+		return new WP_Error(
+			$result->get_error_code(),
+			$result->get_error_message(),
+			array( 'status' => 400 )
+		);
+	}
+
+	if ( false === $result ) {
+		return new WP_Error(
+			'save_failed',
+			__( 'Failed to save settings.', 'notiblock' ),
+			array( 'status' => 500 )
+		);
+	}
+
+	return rest_ensure_response( notiblock_get_settings() );
 }
 
 /**
@@ -326,164 +375,156 @@ function notiblock_register_dashboard_widget() {
 	}
 }
 add_action( 'wp_dashboard_setup', 'notiblock_register_dashboard_widget' );
+// Network admin dashboard widget.
+add_action( 'wp_network_dashboard_setup', 'notiblock_register_dashboard_widget' );
+
+/**
+ * Registers the Notiblock settings page under Settings > Notiblock.
+ * Only registered in per-site mode (network-wide mode uses the network admin dashboard widget).
+ */
+function notiblock_register_settings_page() {
+	if ( notiblock_use_network_settings() ) {
+		return;
+	}
+	add_options_page(
+		__( 'Notiblock', 'notiblock' ),
+		__( 'Notiblock', 'notiblock' ),
+		'manage_options',
+		'notiblock',
+		'notiblock_settings_page_callback'
+	);
+}
+add_action( 'admin_menu', 'notiblock_register_settings_page' );
+
+/**
+ * Registers the Notiblock settings page in the network admin (network-wide mode only).
+ */
+function notiblock_register_network_settings_page() {
+	if ( ! notiblock_use_network_settings() ) {
+		return;
+	}
+	add_submenu_page(
+		'settings.php',
+		__( 'Notiblock', 'notiblock' ),
+		__( 'Notiblock', 'notiblock' ),
+		'manage_network_options',
+		'notiblock',
+		'notiblock_settings_page_callback'
+	);
+}
+add_action( 'network_admin_menu', 'notiblock_register_network_settings_page' );
+
+/**
+ * Renders the Notiblock settings page.
+ */
+function notiblock_settings_page_callback() {
+	$can_manage = notiblock_use_network_settings()
+		? current_user_can( 'manage_network_options' )
+		: current_user_can( 'manage_options' );
+
+	if ( ! $can_manage ) {
+		return;
+	}
+	?>
+	<div class="wrap">
+		<h1><?php esc_html_e( 'Notiblock Settings', 'notiblock' ); ?></h1>
+		<div id="notiblock-settings-root"></div>
+	</div>
+	<?php
+}
+
+/**
+ * Enqueues the admin React app script and styles.
+ * Shared between regular and network admin contexts.
+ */
+function notiblock_do_enqueue_admin_scripts() {
+	$asset_file = plugin_dir_path( __FILE__ ) . 'build/admin/index.asset.php';
+	if ( ! file_exists( $asset_file ) ) {
+		return;
+	}
+
+	$asset = require $asset_file;
+
+	wp_enqueue_script(
+		'notiblock-admin',
+		plugin_dir_url( __FILE__ ) . 'build/admin/index.js',
+		$asset['dependencies'],
+		$asset['version'],
+		true
+	);
+
+	wp_enqueue_style(
+		'notiblock-admin',
+		plugin_dir_url( __FILE__ ) . 'build/admin/style-index.css',
+		array(),
+		$asset['version']
+	);
+
+	wp_localize_script(
+		'notiblock-admin',
+		'notiblockAdmin',
+		array(
+			'restUrl'       => rest_url( 'notiblock/v1/settings' ),
+			'nonce'         => wp_create_nonce( 'wp_rest' ),
+			'settings'      => notiblock_get_settings(),
+			'currentDate'   => current_time( 'Y-m-d' ),
+			'isNetworkWide' => notiblock_use_network_settings(),
+		)
+	);
+}
+
+/**
+ * Enqueues admin scripts on the dashboard and settings page.
+ *
+ * @param string $hook Current admin page hook.
+ */
+function notiblock_enqueue_admin_scripts( $hook ) {
+	$is_dashboard     = 'index.php' === $hook;
+	$is_settings_page = 'settings_page_notiblock' === $hook;
+
+	if ( ! $is_dashboard && ! $is_settings_page ) {
+		return;
+	}
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	notiblock_do_enqueue_admin_scripts();
+}
+add_action( 'admin_enqueue_scripts', 'notiblock_enqueue_admin_scripts' );
+
+/**
+ * Enqueues admin scripts on the network admin dashboard and settings page.
+ *
+ * @param string $hook Current admin page hook.
+ */
+function notiblock_enqueue_network_admin_scripts( $hook ) {
+	$is_dashboard     = 'index.php' === $hook;
+	$is_settings_page = 'settings_page_notiblock' === $hook;
+
+	if ( ! $is_dashboard && ! $is_settings_page ) {
+		return;
+	}
+
+	if ( ! notiblock_use_network_settings() || ! current_user_can( 'manage_network_options' ) ) {
+		return;
+	}
+
+	notiblock_do_enqueue_admin_scripts();
+}
+add_action( 'network_admin_enqueue_scripts', 'notiblock_enqueue_network_admin_scripts' );
 
 /**
  * Callback function for the Notiblock dashboard widget.
- * Displays the form and handles form submission.
+ * Renders a mount point for the React settings app.
  */
 function notiblock_dashboard_widget_callback() {
-	// Check capability based on network-wide or per-site mode.
 	if ( notiblock_use_network_settings() && ! current_user_can( 'manage_network_options' ) ) {
 		return;
 	} elseif ( ! notiblock_use_network_settings() && ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
 
-	$settings = notiblock_get_settings();
-	$message  = '';
-
-	// Handle form submission.
-	if ( isset( $_POST['notiblock_save_settings'] ) && check_admin_referer( 'notiblock_save_settings', 'notiblock_nonce' ) ) {
-		// Capability check is handled in notiblock_save_settings(), but we check here too for early exit.
-		$can_save = notiblock_use_network_settings()
-			? current_user_can( 'manage_network_options' )
-			: current_user_can( 'manage_options' );
-
-		if ( $can_save ) {
-			// Note: Content is intentionally not sanitized here as it will be sanitized
-			// with wp_kses_post() in notiblock_save_settings() to preserve rich text formatting.
-			$data = array(
-				'content'     => isset( $_POST['notiblock_content'] ) ? wp_unslash( $_POST['notiblock_content'] ) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-				'start_date'  => isset( $_POST['notiblock_start_date'] ) ? sanitize_text_field( wp_unslash( $_POST['notiblock_start_date'] ) ) : '',
-				'end_date'    => isset( $_POST['notiblock_end_date'] ) ? sanitize_text_field( wp_unslash( $_POST['notiblock_end_date'] ) ) : '',
-				'always_show' => isset( $_POST['notiblock_always_show'] ),
-			);
-
-			$result = notiblock_save_settings( $data );
-
-			if ( is_wp_error( $result ) ) {
-				// Validation error.
-				$message = '<div class="notice notice-error inline"><p>' . esc_html( $result->get_error_message() ) . '</p></div>';
-			} elseif ( $result ) {
-				// Success - force refresh to get updated settings (cache was cleared in save function).
-				$settings = notiblock_get_settings( true );
-				$message  = '<div class="notice notice-success inline"><p>' . esc_html__( 'Settings saved successfully.', 'notiblock' ) . '</p></div>';
-			} else {
-				// Save failure.
-				$message = '<div class="notice notice-error inline"><p>' . esc_html__( 'Error saving settings.', 'notiblock' ) . '</p></div>';
-			}
-		}
-	}
-
-	// Display message if any.
-	if ( $message ) {
-		echo wp_kses_post( $message );
-	}
-
-	// Show notice if in network-wide mode.
-	if ( notiblock_use_network_settings() ) {
-		echo '<div class="notice notice-info inline"><p>';
-		echo '<strong>' . esc_html__( 'Network-wide Mode:', 'notiblock' ) . '</strong> ';
-		echo esc_html__( 'These settings apply to all sites in the network.', 'notiblock' );
-		echo '</p></div>';
-	}
-	?>
-
-	<form method="post" action="">
-		<?php wp_nonce_field( 'notiblock_save_settings', 'notiblock_nonce' ); ?>
-
-		<p>
-			<label for="notiblock_content">
-				<strong><?php esc_html_e( 'Notification Message:', 'notiblock' ); ?></strong>
-			</label>
-		</p>
-		<?php
-		wp_editor(
-			$settings['content'],
-			'notiblock_content',
-			array(
-				'textarea_name' => 'notiblock_content',
-				'textarea_rows' => 5,
-				'media_buttons' => false,
-				'teeny'         => true,
-			)
-		);
-		?>
-
-		<p>
-			<label for="notiblock_start_date">
-				<strong><?php esc_html_e( 'Start Date:', 'notiblock' ); ?></strong>
-			</label><br>
-			<input type="date" id="notiblock_start_date" name="notiblock_start_date" value="<?php echo esc_attr( $settings['start_date'] ); ?>" class="regular-text" />
-			<br>
-			<span class="description"><?php esc_html_e( 'Leave empty for no start date restriction.', 'notiblock' ); ?></span>
-		</p>
-
-		<p>
-			<label for="notiblock_end_date">
-				<strong><?php esc_html_e( 'End Date:', 'notiblock' ); ?></strong>
-			</label><br>
-			<input type="date" id="notiblock_end_date" name="notiblock_end_date" value="<?php echo esc_attr( $settings['end_date'] ); ?>" class="regular-text" />
-			<br>
-			<span class="description"><?php esc_html_e( 'Leave empty for no end date restriction.', 'notiblock' ); ?></span>
-		</p>
-
-		<p>
-			<label for="notiblock_always_show">
-				<input type="checkbox" id="notiblock_always_show" name="notiblock_always_show" value="1" <?php checked( $settings['always_show'], true ); ?> />
-				<strong><?php esc_html_e( 'Always show (ignore date range)', 'notiblock' ); ?></strong>
-			</label>
-		</p>
-
-		<?php
-		// Display current status.
-		if ( ! empty( $settings['content'] ) ) {
-			$is_active = notiblock_is_active( $settings );
-			$status    = $is_active ? __( 'Active', 'notiblock' ) : __( 'Inactive', 'notiblock' );
-			$class     = $is_active ? 'notice-success' : 'notice-warning';
-			?>
-			<div class="notice <?php echo esc_attr( $class ); ?> inline">
-				<p>
-					<strong><?php esc_html_e( 'Current Status:', 'notiblock' ); ?></strong> <?php echo esc_html( $status ); ?>
-					<?php
-					if ( ! $settings['always_show'] ) {
-						if ( ! empty( $settings['start_date'] ) || ! empty( $settings['end_date'] ) ) {
-							echo ' — ';
-							if ( ! empty( $settings['start_date'] ) && ! empty( $settings['end_date'] ) ) {
-								printf(
-									/* translators: 1: start date, 2: end date */
-									esc_html__( 'Display period: %1$s to %2$s', 'notiblock' ),
-									esc_html( $settings['start_date'] ),
-									esc_html( $settings['end_date'] )
-								);
-							} elseif ( ! empty( $settings['start_date'] ) ) {
-								printf(
-									/* translators: %s: start date */
-									esc_html__( 'Display from: %s', 'notiblock' ),
-									esc_html( $settings['start_date'] )
-								);
-							} elseif ( ! empty( $settings['end_date'] ) ) {
-								printf(
-									/* translators: %s: end date */
-									esc_html__( 'Display until: %s', 'notiblock' ),
-									esc_html( $settings['end_date'] )
-								);
-							}
-						}
-					} else {
-						echo ' — ' . esc_html__( 'Always visible (date range ignored)', 'notiblock' );
-					}
-					?>
-				</p>
-			</div>
-			<?php
-		}
-		?>
-
-		<p>
-			<?php submit_button( __( 'Save Settings', 'notiblock' ), 'primary', 'notiblock_save_settings', false ); ?>
-		</p>
-	</form>
-
-	<?php
+	echo '<div id="notiblock-widget-root"></div>';
 }
