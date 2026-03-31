@@ -1,99 +1,57 @@
 === Notiblock ===
-Contributors:      The WordPress Contributors
-Tags:              block, notification, conditional, dashboard
-Tested up to:      6.7
+Contributors: philhoyt
+Tags: block, notification, conditional, dashboard
 Requires at least: 6.7
-Requires PHP:      7.4
-Stable tag:        0.1.0
-License:           GPL-2.0-or-later
-License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+Tested up to: 7.0
+Requires PHP: 7.4
+Stable tag: 1.0.0
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Conditional notification blocks with dashboard widget configuration. Display time-sensitive messages that automatically show or hide based on date ranges.
+Conditional notification blocks for WordPress with dashboard widget configuration.
 
 == Description ==
 
-Notiblock is a WordPress block plugin that allows you to create conditional notification messages that display on your site based on date settings. Perfect for announcements, promotions, maintenance notices, or any time-sensitive content.
+Notiblock adds two blocks to the editor: a conditional wrapper that shows or hides its contents based on a date range, and a message block that displays a globally configured notification. Set the message and date range once in the dashboard widget or settings page, then place the blocks wherever the notification should appear.
 
-**Key Features:**
-
-* **Conditional Display:** Show or hide notifications based on start and end dates
-* **Dashboard Widget:** Easy configuration through a dedicated dashboard widget
-* **Always Show Option:** Override date restrictions when needed
-* **Rich Text Editor:** Format your notification messages with the built-in editor
-* **Block-Based:** Modern block editor integration with custom block category
-* **Flexible Placement:** Place notification blocks anywhere in your content
-
-**How It Works:**
-
-1. Configure your notification message and date range in the Dashboard widget
-2. Add the "Notiblock Conditional" block to any post, page, or template
-3. The notification automatically displays when the current date is within your specified range
-4. Use the "Always show" option to display notifications regardless of dates
-
-**Use Cases:**
-
-* Site-wide announcements
-* Limited-time promotions
-* Maintenance notices
-* Holiday messages
-* Event notifications
-* Seasonal content
+* Date-based conditional display with optional "Always show" override.
+* Configure the notification message and date range from the dashboard widget or Settings → Notiblock.
+* Rich text editor for notification message formatting.
+* Place blocks in posts, pages, or templates.
 
 == Installation ==
 
-1. Upload the `notiblock` folder to the `/wp-content/plugins/` directory, or install the plugin through the WordPress plugins screen directly
-2. Activate the plugin through the 'Plugins' screen in WordPress
-3. Go to Dashboard → Notiblock Settings to configure your notification message
-4. Add the "Notiblock Conditional" block to any post, page, or template where you want the notification to appear
+1. Download the latest `notiblock.zip` from the [GitHub releases page](https://github.com/philhoyt/notiblock/releases).
+2. Go to **Plugins → Add New → Upload Plugin** and upload the zip file.
+3. Activate through the Plugins screen.
+4. Go to **Dashboard → Notiblock Settings** or **Settings → Notiblock** to configure your message and date range.
 
 == Frequently Asked Questions ==
 
-= How do I configure a notification? =
+= How do the two blocks work together? =
 
-Go to your WordPress Dashboard and look for the "Notiblock Settings" widget. Enter your message, set start and end dates, and save. The notification will automatically display when the current date is within your specified range.
+Notiblock Conditional is the wrapper block that handles the date logic. Notiblock Message goes inside it and displays the globally configured notification. The Message block is only available inside the Conditional block.
 
-= Can I show the notification always, regardless of dates? =
+= Can I show the notification outside of its date range? =
 
-Yes! Check the "Always show (ignore date range)" checkbox in the dashboard widget settings. This will display the notification regardless of the date settings.
+Yes. Check "Always show (ignore date range)" in the settings to display the notification regardless of dates.
 
-= Where can I place the notification blocks? =
+= Can I use multiple Conditional blocks on the same page? =
 
-You can place the "Notiblock Conditional" block anywhere in your content - posts, pages, template parts, or even in widget areas that support blocks. The notification will only display when the date conditions are met (or if "Always show" is enabled).
+Yes. Each one displays the same global message and respects the same date settings.
 
-= What happens if I don't set any dates? =
+= What happens if no dates are set? =
 
-If no dates are set and "Always show" is not checked, the notification will not display. You must either set a date range or enable "Always show" for the notification to appear.
-
-= Can I use multiple notification blocks on the same page? =
-
-Yes, you can add multiple "Notiblock Conditional" blocks to the same page. They will all display the same global message configured in the dashboard widget.
-
-= What if the end date is before the start date? =
-
-The notification will not display. Make sure your end date is after your start date for the notification to work correctly.
-
-= Can I customize the styling of the notification? =
-
-Yes! The blocks use standard WordPress block classes that can be styled with your theme's CSS. The main wrapper class is `.wp-block-notiblock-conditional` and the message block uses `.wp-block-notiblock-message`.
-
-== Screenshots ==
-
-1. Dashboard widget for configuring notification settings
-2. Notiblock Conditional block in the block editor
-3. Notification displayed on the frontend
+The notification will not display unless "Always show" is checked.
 
 == Changelog ==
 
-= 0.1.0 =
-* Initial release
-* Conditional notification block with date-based display logic
-* Dashboard widget for configuration
-* Message block for displaying global notification content
-* Custom block category registration
-* REST API endpoint for editor preview
-* Support for "Always show" override option
-
-== Upgrade Notice ==
+= 1.0.0 =
+* Replaced TinyMCE editor with a React-based rich text editor.
+* Added text alignment controls to the editor toolbar.
+* Added Settings → Notiblock admin page alongside the dashboard widget.
+* Added REST API endpoint for saving settings from the React app.
+* Added GitHub release-based auto-updates via Plugin Update Checker.
 
 = 0.1.0 =
-Initial release of Notiblock. Install and activate to start using conditional notifications.
+* Initial release.
