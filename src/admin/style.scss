@@ -88,6 +88,11 @@
 			font-style: normal;
 			font-size: 13px;
 		}
+
+		&--disabled {
+			opacity: 0.5;
+			pointer-events: none;
+		}
 	}
 
 	&__status {

@@ -2,6 +2,8 @@
 
 Conditional notification blocks for WordPress with dashboard widget configuration.
 
+![Notiblock Settings](assets/screenshot-1.png)
+
 ## Description
 
 Notiblock adds two blocks to the editor: a conditional wrapper that shows or hides its contents based on a date range, and a message block that displays a globally configured notification. Set the message and date range once in the dashboard widget or settings page, then place the blocks wherever the notification should appear.

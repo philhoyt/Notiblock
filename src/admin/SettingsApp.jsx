@@ -2,6 +2,7 @@ import { useState, useRef } from '@wordpress/element';
 import RichEditor from './RichEditor';
 
 const config = window.notiblockAdmin ?? {};
+const today  = config.currentDate ?? new Date().toISOString().slice( 0, 10 );
 
 /**
  * Returns true if the notification should currently be active, computed
@@ -116,7 +117,7 @@ export default function SettingsApp() {
 				/>
 			</div>
 
-			<div className="notiblock-settings__field">
+			<div className={ `notiblock-settings__field${ settings.always_show ? ' notiblock-settings__field--disabled' : '' }` }>
 				<label htmlFor="nb-start-date">
 					<strong>Start Date:</strong>
 				</label>
@@ -125,13 +126,23 @@ export default function SettingsApp() {
 					id="nb-start-date"
 					type="date"
 					value={ settings.start_date }
-					onChange={ ( e ) => setField( 'start_date', e.target.value ) }
+					min={ today }
+					disabled={ settings.always_show }
+					onChange={ ( e ) => {
+						const newStart = e.target.value;
+						// Clear end date if it's now before the new start date.
+						if ( settings.end_date && newStart && settings.end_date < newStart ) {
+							setSettings( ( prev ) => ( { ...prev, start_date: newStart, end_date: '' } ) );
+						} else {
+							setField( 'start_date', newStart );
+						}
+					} }
 					className="regular-text"
 				/>
 				<p className="description">Leave empty for no start date restriction.</p>
 			</div>
 
-			<div className="notiblock-settings__field">
+			<div className={ `notiblock-settings__field${ settings.always_show ? ' notiblock-settings__field--disabled' : '' }` }>
 				<label htmlFor="nb-end-date">
 					<strong>End Date:</strong>
 				</label>
@@ -140,6 +151,8 @@ export default function SettingsApp() {
 					id="nb-end-date"
 					type="date"
 					value={ settings.end_date }
+					min={ settings.start_date || today }
+					disabled={ settings.always_show }
 					onChange={ ( e ) => setField( 'end_date', e.target.value ) }
 					className="regular-text"
 				/>

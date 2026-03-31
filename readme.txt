@@ -52,6 +52,10 @@ The notification will not display unless "Always show" is checked.
 * Added Settings → Notiblock admin page alongside the dashboard widget.
 * Added REST API endpoint for saving settings from the React app.
 * Added GitHub release-based auto-updates via Plugin Update Checker.
+* Start date is restricted to today or later.
+* End date is restricted to the start date or later.
+* Changing the start date past the end date automatically clears the end date.
+* Date fields are disabled when "Always show" is enabled.
 
 = 0.1.0 =
 * Initial release.
