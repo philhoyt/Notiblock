@@ -24,7 +24,8 @@
 		"lint:js": "wp-scripts lint-js",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
-		"start": "wp-scripts start --webpack-copy-php --blocks-manifest"
+		"start": "wp-scripts start --webpack-copy-php --blocks-manifest",
+		"test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/notiblock ./vendor/bin/phpunit"
 	},
 	"devDependencies": {
 		"@wordpress/env": "^11.13.0",

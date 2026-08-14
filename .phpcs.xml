@@ -54,5 +54,16 @@
 				<element value="get_block_wrapper_attributes"/>
 			</property>
 		</properties>
+		<!-- CLI-only bootstrap: its echo output goes to a terminal, not a browser. -->
+		<exclude-pattern>tests/bootstrap.php</exclude-pattern>
+	</rule>
+
+	<!--
+	PHPCS attributes this file's docblock to the first require_once rather than
+	to the file itself. The test classes, whose docblocks precede a class
+	declaration, are detected correctly and stay covered.
+	-->
+	<rule ref="Squiz.Commenting.FileComment.Missing">
+		<exclude-pattern>tests/bootstrap.php</exclude-pattern>
 	</rule>
 </ruleset>
