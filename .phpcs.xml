@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<ruleset name="Notiblock">
+	<description>Coding standards for the Notiblock plugin.</description>
+
+	<rule ref="WordPress"/>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+
+	<file>.</file>
+
+	<exclude-pattern>vendor/*</exclude-pattern>
+	<exclude-pattern>node_modules/*</exclude-pattern>
+	<exclude-pattern>build/*</exclude-pattern>
+	<exclude-pattern>lib/*</exclude-pattern>
+	<exclude-pattern>*.asset.php</exclude-pattern>
+
+	<!-- Matches "Requires at least" in the plugin header. -->
+	<config name="minimum_wp_version" value="6.7"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="notiblock"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="notiblock"/>
+				<element value="NOTIBLOCK"/>
+			</property>
+		</properties>
+		<!--
+		Block render.php files are require'd inside a closure by core:
+		wp-includes/blocks.php builds
+		  static function ( $attributes, $content, $block ) use ( $template_path ) {
+		      ob_start(); require $template_path; return ob_get_clean();
+		  }
+		so $settings/$content/$is_active are function-scoped, never global.
+		WPCS cannot see through the closure, so this sniff false-positives here.
+		-->
+		<exclude-pattern>*/render.php</exclude-pattern>
+	</rule>
+
+	<rule ref="WordPress.Security.EscapeOutput">
+		<properties>
+			<!-- Returns pre-escaped attribute markup; core's own block
+			     templates echo it directly. -->
+			<property name="customAutoEscapedFunctions" type="array">
+				<element value="get_block_wrapper_attributes"/>
+			</property>
+		</properties>
+		<!-- CLI-only bootstrap: its echo output goes to a terminal, not a browser. -->
+		<exclude-pattern>tests/bootstrap.php</exclude-pattern>
+	</rule>
+
+	<!--
+	PHPCS attributes this file's docblock to the first require_once rather than
+	to the file itself. The test classes, whose docblocks precede a class
+	declaration, are detected correctly and stay covered.
+	-->
+	<rule ref="Squiz.Commenting.FileComment.Missing">
+		<exclude-pattern>tests/bootstrap.php</exclude-pattern>
+	</rule>
+</ruleset>

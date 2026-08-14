@@ -14,9 +14,8 @@ import { __ } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
 
 /**
- * WordPress data hooks
+ * WordPress data fetching
  */
-import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -96,4 +95,3 @@ export default function Edit() {
 		</div>
 	);
 }
-

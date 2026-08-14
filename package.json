@@ -7,9 +7,11 @@
 	"main": "build/index.js",
 	"files": [
 		"build",
+		"languages",
 		"lib",
 		"notiblock.php",
-		"readme.txt"
+		"readme.txt",
+		"uninstall.php"
 	],
 	"scripts": {
 		"build": "wp-scripts build --webpack-copy-php --blocks-manifest",
@@ -17,11 +19,13 @@
 		"env:stop": "wp-env stop",
 		"env:cli": "wp-env run cli --",
 		"format": "wp-scripts format",
+		"i18n:pot": "wp-env run cli -- wp i18n make-pot wp-content/plugins/notiblock wp-content/plugins/notiblock/languages/notiblock.pot --domain=notiblock --exclude=node_modules,vendor,build,lib,plans,tests",
 		"lint:css": "wp-scripts lint-style",
 		"lint:js": "wp-scripts lint-js",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
-		"start": "wp-scripts start --webpack-copy-php --blocks-manifest"
+		"start": "wp-scripts start --webpack-copy-php --blocks-manifest",
+		"test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/notiblock ./vendor/bin/phpunit"
 	},
 	"devDependencies": {
 		"@wordpress/env": "^11.13.0",

@@ -4,6 +4,13 @@
 	background: #fff;
 	margin-bottom: 4px;
 
+	// The contenteditable clears its own outline, so the focus indicator lives
+	// on the wrapper. Without this the editor is a tab stop with no visible focus.
+	&:focus-within {
+		outline: 2px solid #2271b1;
+		outline-offset: 1px;
+	}
+
 	&__toolbar {
 		display: flex;
 		gap: 2px;
@@ -67,9 +74,17 @@
 			pointer-events: none;
 		}
 	}
+
+	&__link-modal-actions {
+		display: flex;
+		gap: 8px;
+		justify-content: flex-end;
+		margin-top: 16px;
+	}
 }
 
 .notiblock-settings {
+
 	.notice {
 		margin-bottom: 12px;
 	}

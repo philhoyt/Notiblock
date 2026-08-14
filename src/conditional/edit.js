@@ -11,7 +11,11 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps, InnerBlocks, InspectorControls } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	InnerBlocks,
+	InspectorControls,
+} from '@wordpress/block-editor';
 
 /**
  * WordPress components
@@ -39,9 +43,7 @@ export default function Edit() {
 		className: 'notiblock-conditional',
 	} );
 
-	const TEMPLATE = [
-		[ 'notiblock/message' ],
-	];
+	const TEMPLATE = [ [ 'notiblock/message' ] ];
 
 	return (
 		<>
