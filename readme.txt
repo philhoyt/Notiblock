@@ -2,7 +2,7 @@
 Contributors: philhoyt
 Tags: block, notification, conditional, dashboard
 Requires at least: 6.7
-Tested up to: 7.1-RC3
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.0.0
 License: GPL-2.0-or-later
