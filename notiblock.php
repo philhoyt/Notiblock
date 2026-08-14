@@ -519,10 +519,14 @@ function notiblock_do_enqueue_admin_scripts() {
 		true
 	);
 
+	/*
+	 * wp-components supplies the styles for the link Modal. Admin screens do
+	 * not enqueue it by default, so declare it as a dependency here.
+	 */
 	wp_enqueue_style(
 		'notiblock-admin',
 		plugin_dir_url( __FILE__ ) . 'build/admin/style-index.css',
-		array(),
+		array( 'wp-components' ),
 		$asset['version']
 	);
 

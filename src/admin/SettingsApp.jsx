@@ -1,8 +1,12 @@
 import { useState, useRef } from '@wordpress/element';
+import { __, sprintf } from '@wordpress/i18n';
+import { speak } from '@wordpress/a11y';
 import RichEditor from './RichEditor';
 
 const config = window.notiblockAdmin ?? {};
-const today  = config.currentDate ?? new Date().toISOString().slice( 0, 10 );
+const today = config.currentDate ?? new Date().toISOString().slice( 0, 10 );
+
+const EDITOR_ID = 'notiblock-message-editor';
 
 /**
  * Returns true if the notification should currently be active, computed
@@ -18,7 +22,6 @@ function computeIsActive( settings ) {
 	if ( ! settings.start_date && ! settings.end_date ) {
 		return false;
 	}
-	const today = config.currentDate ?? new Date().toISOString().slice( 0, 10 );
 	if ( settings.start_date && today < settings.start_date ) {
 		return false;
 	}
@@ -26,6 +29,37 @@ function computeIsActive( settings ) {
 		return false;
 	}
 	return true;
+}
+
+/**
+ * Builds the human-readable display-period sentence for the status notice.
+ *
+ * @param {Object} settings
+ * @return {string} Description of the configured display window.
+ */
+function describePeriod( settings ) {
+	if ( settings.start_date && settings.end_date ) {
+		return sprintf(
+			/* translators: 1: start date, 2: end date. */
+			__( 'Display period: %1$s to %2$s', 'notiblock' ),
+			settings.start_date,
+			settings.end_date
+		);
+	}
+
+	if ( settings.start_date ) {
+		return sprintf(
+			/* translators: %s: start date. */
+			__( 'Display from: %s', 'notiblock' ),
+			settings.start_date
+		);
+	}
+
+	return sprintf(
+		/* translators: %s: end date. */
+		__( 'Display until: %s', 'notiblock' ),
+		settings.end_date
+	);
 }
 
 /**
@@ -37,14 +71,14 @@ export default function SettingsApp() {
 	const editorRef = useRef( null );
 
 	const [ settings, setSettings ] = useState( () => ( {
-		content:     config.settings?.content     ?? '',
-		start_date:  config.settings?.start_date  ?? '',
-		end_date:    config.settings?.end_date     ?? '',
+		content: config.settings?.content ?? '',
+		start_date: config.settings?.start_date ?? '',
+		end_date: config.settings?.end_date ?? '',
 		always_show: config.settings?.always_show ?? false,
 	} ) );
 
-	const [ saving,  setSaving  ] = useState( false );
-	const [ notice,  setNotice  ] = useState( null ); // { type: 'success'|'error', text: string }
+	const [ saving, setSaving ] = useState( false );
+	const [ notice, setNotice ] = useState( null ); // { type: 'success'|'error', text: string }
 
 	function setField( field, value ) {
 		setSettings( ( prev ) => ( { ...prev, [ field ]: value } ) );
@@ -56,10 +90,10 @@ export default function SettingsApp() {
 
 		try {
 			const response = await fetch( config.restUrl, {
-				method:  'POST',
+				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-WP-Nonce':   config.nonce,
+					'X-WP-Nonce': config.nonce,
 				},
 				body: JSON.stringify( settings ),
 			} );
@@ -67,25 +101,29 @@ export default function SettingsApp() {
 			const data = await response.json();
 
 			if ( ! response.ok ) {
-				throw new Error( data.message ?? 'Failed to save settings.' );
+				throw new Error( data.message ?? __( 'Failed to save settings.', 'notiblock' ) );
 			}
 
 			// Update state with whatever the server returned (sanitized values).
 			setSettings( {
-				content:     data.content     ?? '',
-				start_date:  data.start_date  ?? '',
-				end_date:    data.end_date     ?? '',
+				content: data.content ?? '',
+				start_date: data.start_date ?? '',
+				end_date: data.end_date ?? '',
 				always_show: data.always_show ?? false,
 			} );
-			setNotice( { type: 'success', text: 'Settings saved successfully.' } );
+
+			const message = __( 'Settings saved successfully.', 'notiblock' );
+			setNotice( { type: 'success', text: message } );
+			speak( message, 'polite' );
 		} catch ( err ) {
 			setNotice( { type: 'error', text: err.message } );
+			speak( err.message, 'assertive' );
 		} finally {
 			setSaving( false );
 		}
 	}
 
-	const isActive   = computeIsActive( settings );
+	const isActive = computeIsActive( settings );
 	const hasContent = settings.content.trim().length > 0;
 
 	return (
@@ -93,8 +131,11 @@ export default function SettingsApp() {
 			{ config.isNetworkWide && (
 				<div className="notice notice-info inline">
 					<p>
-						<strong>Network-wide Mode:</strong>{ ' ' }
-						These settings apply to all sites in the network.
+						<strong>{ __( 'Network-wide Mode:', 'notiblock' ) }</strong>{ ' ' }
+						{ __(
+							'These settings apply to all sites in the network.',
+							'notiblock'
+						) }
 					</p>
 				</div>
 			) }
@@ -106,20 +147,25 @@ export default function SettingsApp() {
 			) }
 
 			<div className="notiblock-settings__field">
-				<label>
-					<strong>Notification Message:</strong>
+				<label htmlFor={ EDITOR_ID }>
+					<strong>{ __( 'Notification Message:', 'notiblock' ) }</strong>
 				</label>
 				<RichEditor
-					placeholder="Enter notification message…"
+					id={ EDITOR_ID }
+					placeholder={ __( 'Enter notification message…', 'notiblock' ) }
 					initialContent={ config.settings?.content ?? '' }
 					editorRef={ editorRef }
 					onChange={ ( html ) => setField( 'content', html ) }
 				/>
 			</div>
 
-			<div className={ `notiblock-settings__field${ settings.always_show ? ' notiblock-settings__field--disabled' : '' }` }>
+			<div
+				className={ `notiblock-settings__field${
+					settings.always_show ? ' notiblock-settings__field--disabled' : ''
+				}` }
+			>
 				<label htmlFor="nb-start-date">
-					<strong>Start Date:</strong>
+					<strong>{ __( 'Start Date:', 'notiblock' ) }</strong>
 				</label>
 				<br />
 				<input
@@ -132,19 +178,29 @@ export default function SettingsApp() {
 						const newStart = e.target.value;
 						// Clear end date if it's now before the new start date.
 						if ( settings.end_date && newStart && settings.end_date < newStart ) {
-							setSettings( ( prev ) => ( { ...prev, start_date: newStart, end_date: '' } ) );
+							setSettings( ( prev ) => ( {
+								...prev,
+								start_date: newStart,
+								end_date: '',
+							} ) );
 						} else {
 							setField( 'start_date', newStart );
 						}
 					} }
 					className="regular-text"
 				/>
-				<p className="description">Leave empty for no start date restriction.</p>
+				<p className="description">
+					{ __( 'Leave empty for no start date restriction.', 'notiblock' ) }
+				</p>
 			</div>
 
-			<div className={ `notiblock-settings__field${ settings.always_show ? ' notiblock-settings__field--disabled' : '' }` }>
+			<div
+				className={ `notiblock-settings__field${
+					settings.always_show ? ' notiblock-settings__field--disabled' : ''
+				}` }
+			>
 				<label htmlFor="nb-end-date">
-					<strong>End Date:</strong>
+					<strong>{ __( 'End Date:', 'notiblock' ) }</strong>
 				</label>
 				<br />
 				<input
@@ -156,7 +212,9 @@ export default function SettingsApp() {
 					onChange={ ( e ) => setField( 'end_date', e.target.value ) }
 					className="regular-text"
 				/>
-				<p className="description">Leave empty for no end date restriction.</p>
+				<p className="description">
+					{ __( 'Leave empty for no end date restriction.', 'notiblock' ) }
+				</p>
 			</div>
 
 			<div className="notiblock-settings__field">
@@ -168,29 +226,31 @@ export default function SettingsApp() {
 						onChange={ ( e ) => setField( 'always_show', e.target.checked ) }
 					/>
 					{ ' ' }
-					<strong>Always show (ignore date range)</strong>
+					<strong>{ __( 'Always show (ignore date range)', 'notiblock' ) }</strong>
 				</label>
 			</div>
 
 			{ hasContent && (
 				<div
-					className={ `notice ${ isActive ? 'notice-success' : 'notice-warning' } inline notiblock-settings__status` }
+					className={ `notice ${
+						isActive ? 'notice-success' : 'notice-warning'
+					} inline notiblock-settings__status` }
 				>
 					<p>
-						<strong>Current Status:</strong>{ ' ' }
-						{ isActive ? 'Active' : 'Inactive' }
-						{ ! settings.always_show && ( settings.start_date || settings.end_date ) && (
+						<strong>{ __( 'Current Status:', 'notiblock' ) }</strong>{ ' ' }
+						{ isActive ? __( 'Active', 'notiblock' ) : __( 'Inactive', 'notiblock' ) }
+						{ ! settings.always_show &&
+							( settings.start_date || settings.end_date ) && (
 							<>
 								{ ' — ' }
-								{ settings.start_date && settings.end_date
-									? `Display period: ${ settings.start_date } to ${ settings.end_date }`
-									: settings.start_date
-										? `Display from: ${ settings.start_date }`
-										: `Display until: ${ settings.end_date }`
-								}
+								{ describePeriod( settings ) }
 							</>
 						) }
-						{ settings.always_show && ' — Always visible (date range ignored)' }
+						{ settings.always_show &&
+							` — ${ __(
+								'Always visible (date range ignored)',
+								'notiblock'
+							) }` }
 					</p>
 				</div>
 			) }
@@ -202,7 +262,7 @@ export default function SettingsApp() {
 					disabled={ saving }
 					type="button"
 				>
-					{ saving ? 'Saving…' : 'Save Settings' }
+					{ saving ? __( 'Saving…', 'notiblock' ) : __( 'Save Settings', 'notiblock' ) }
 				</button>
 			</div>
 		</div>
