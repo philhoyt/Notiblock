@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Create plugin zip
+        run: npm run plugin-zip
+
+      # A release that ships without Plugin Update Checker silently disables
+      # auto-updates for every user, so fail loudly rather than publish it.
+      - name: Verify zip contents
+        run: |
+          for path in \
+            notiblock/notiblock.php \
+            notiblock/uninstall.php \
+            notiblock/readme.txt \
+            notiblock/build/ \
+            notiblock/languages/notiblock.pot \
+            notiblock/lib/plugin-update-checker/plugin-update-checker.php
+          do
+            if ! unzip -l notiblock.zip | grep -q "$path"; then
+              echo "::error::Missing from zip: $path"
+              exit 1
+            fi
+            echo "ok: $path"
+          done
+
+          # Anchored to the zip root: lib/plugin-update-checker/vendor/ is
+          # PUC's own bundled Parsedown and must ship, so a bare "vendor/"
+          # match would fail every release.
+          for bad in notiblock/node_modules/ notiblock/src/ notiblock/tests/ notiblock/.github/ notiblock/vendor/; do
+            if unzip -l notiblock.zip | grep -q "$bad"; then
+              echo "::error::Should not ship: $bad"
+              exit 1
+            fi
+          done
+          echo "Zip contents verified."
+
+      - name: Extract changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk "/^= ${VERSION} =/{found=1} found && /^= [0-9]/ && !/^= ${VERSION} =/{exit} found{print}" readme.txt > changelog_body.txt
+          cat changelog_body.txt
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            notiblock.zip
+          body_path: changelog_body.txt
