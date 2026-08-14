@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    name: PHP standards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Validate composer.json
+        run: composer validate --no-check-publish
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Coding standards
+        run: composer run lint
+
+      - name: Security advisories
+        run: composer audit
+
+  php-syntax:
+    name: PHP ${{ matrix.php }} syntax
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Lower bound matches "Requires PHP" in the plugin header.
+        php: [ '7.4', '8.3' ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Lint plugin sources
+        run: |
+          find . -name '*.php' \
+            -not -path './vendor/*' \
+            -not -path './node_modules/*' \
+            -not -path './lib/*' \
+            -print0 | xargs -0 -n1 -P4 php -l
+
+  javascript:
+    name: JavaScript and styles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint JavaScript
+        run: npm run lint:js
+
+      - name: Lint styles
+        run: npm run lint:css
+
+      - name: Build
+        run: npm run build
+
+      - name: Production dependency advisories
+        run: npm audit --omit=dev
+
+  tests:
+    name: PHPUnit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # phpunit runs inside the wp-env container, which mounts this directory,
+      # so vendor/ has to exist on the host first.
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Start wp-env
+        run: npm run env:start
+
+      - name: Run PHPUnit
+        run: npm run test:php
+
+      - name: Stop wp-env
+        if: always()
+        run: npm run env:stop

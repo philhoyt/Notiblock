@@ -1,7 +1,11 @@
 {
     "name": "philhoyt/notiblock",
+    "description": "Conditional notification blocks with dashboard widget configuration.",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=7.4"
+    },
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
@@ -12,5 +16,9 @@
         "wp-coding-standards/wpcs": "^3.4.1",
         "phpunit/phpunit": "^9.6",
         "yoast/phpunit-polyfills": "^2.0"
+    },
+    "scripts": {
+        "lint": "phpcs",
+        "lint:fix": "phpcbf"
     }
 }
