@@ -96,11 +96,18 @@ add_filter( 'block_categories_all', 'notiblock_register_block_category', 10, 1 )
  * @return array Settings array with 'content', 'start_date', 'end_date', and 'always_show' keys.
  */
 function notiblock_get_settings( $force_refresh = false ) {
-	static $cached_settings = null;
+	static $cached_settings = array();
+
+	/*
+	 * Key the cache by scope so switch_to_blog() cannot serve one site's
+	 * settings to another. Network-wide mode reads a single shared option,
+	 * so every site collapses onto the same key.
+	 */
+	$cache_key = notiblock_use_network_settings() ? 'network' : (string) get_current_blog_id();
 
 	// Return cached settings if available (same request) and not forcing refresh.
-	if ( ! $force_refresh && null !== $cached_settings ) {
-		return $cached_settings;
+	if ( ! $force_refresh && isset( $cached_settings[ $cache_key ] ) ) {
+		return $cached_settings[ $cache_key ];
 	}
 
 	$defaults = array(
@@ -121,8 +128,8 @@ function notiblock_get_settings( $force_refresh = false ) {
 	$settings                = wp_parse_args( $settings, $defaults );
 	$settings['always_show'] = (bool) $settings['always_show'];
 
-	// Cache for this request.
-	$cached_settings = $settings;
+	// Cache for this request, scoped to the current site.
+	$cached_settings[ $cache_key ] = $settings;
 
 	return $settings;
 }
@@ -276,6 +283,42 @@ function notiblock_register_blocks() {
 	}
 }
 add_action( 'init', 'notiblock_register_blocks' );
+
+/**
+ * Loads the plugin text domain.
+ *
+ * Notiblock is distributed through GitHub rather than WordPress.org, so
+ * translations ship in the plugin's own languages/ directory. The just-in-time
+ * loader only looks in WP_LANG_DIR, so this call is required.
+ */
+function notiblock_load_textdomain() {
+	load_plugin_textdomain(
+		'notiblock',
+		false,
+		dirname( plugin_basename( __FILE__ ) ) . '/languages'
+	);
+}
+add_action( 'init', 'notiblock_load_textdomain' );
+
+/**
+ * Registers JavaScript translations for the block editor scripts.
+ *
+ * Scripts registered through block.json receive generated handles, so
+ * translations must be attached after the blocks are registered.
+ */
+function notiblock_set_block_script_translations() {
+	$languages_path = plugin_dir_path( __FILE__ ) . 'languages';
+
+	$handles = array(
+		generate_block_asset_handle( 'notiblock/conditional', 'editorScript' ),
+		generate_block_asset_handle( 'notiblock/message', 'editorScript' ),
+	);
+
+	foreach ( $handles as $handle ) {
+		wp_set_script_translations( $handle, 'notiblock', $languages_path );
+	}
+}
+add_action( 'init', 'notiblock_set_block_script_translations', 20 );
 
 /**
  * Registers REST API endpoints for Notiblock settings.
@@ -483,16 +526,29 @@ function notiblock_do_enqueue_admin_scripts() {
 		$asset['version']
 	);
 
-	wp_localize_script(
+	/*
+	 * wp_add_inline_script() rather than wp_localize_script(): localization
+	 * is a translation helper, and its data is printed before the handle in a
+	 * way that a second localize call on the same handle would overwrite.
+	 */
+	wp_add_inline_script(
 		'notiblock-admin',
-		'notiblockAdmin',
-		array(
-			'restUrl'       => rest_url( 'notiblock/v1/settings' ),
-			'nonce'         => wp_create_nonce( 'wp_rest' ),
-			'settings'      => notiblock_get_settings(),
-			'currentDate'   => current_time( 'Y-m-d' ),
-			'isNetworkWide' => notiblock_use_network_settings(),
-		)
+		'window.notiblockAdmin = ' . wp_json_encode(
+			array(
+				'restUrl'       => rest_url( 'notiblock/v1/settings' ),
+				'nonce'         => wp_create_nonce( 'wp_rest' ),
+				'settings'      => notiblock_get_settings(),
+				'currentDate'   => current_time( 'Y-m-d' ),
+				'isNetworkWide' => notiblock_use_network_settings(),
+			)
+		) . ';',
+		'before'
+	);
+
+	wp_set_script_translations(
+		'notiblock-admin',
+		'notiblock',
+		plugin_dir_path( __FILE__ ) . 'languages'
 	);
 }
 
@@ -502,6 +558,15 @@ function notiblock_do_enqueue_admin_scripts() {
  * @param string $hook Current admin page hook.
  */
 function notiblock_enqueue_admin_scripts( $hook ) {
+	/*
+	 * In network-wide mode the widget and settings page are registered in the
+	 * network admin only, so there is no mount point on a per-site screen.
+	 * Without this guard the bundle loads on every dashboard and mounts nothing.
+	 */
+	if ( notiblock_use_network_settings() ) {
+		return;
+	}
+
 	$is_dashboard     = 'index.php' === $hook;
 	$is_settings_page = 'settings_page_notiblock' === $hook;
 
