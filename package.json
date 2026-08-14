@@ -13,6 +13,9 @@
 	],
 	"scripts": {
 		"build": "wp-scripts build --webpack-copy-php --blocks-manifest",
+		"env:start": "wp-env start",
+		"env:stop": "wp-env stop",
+		"env:cli": "wp-env run cli --",
 		"format": "wp-scripts format",
 		"lint:css": "wp-scripts lint-style",
 		"lint:js": "wp-scripts lint-js",
@@ -21,6 +24,7 @@
 		"start": "wp-scripts start --webpack-copy-php --blocks-manifest"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "^31.1.0"
+		"@wordpress/env": "^11.13.0",
+		"@wordpress/scripts": "^34.1.0"
 	}
 }
