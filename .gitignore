@@ -29,8 +29,10 @@ node_modules/
 # dotenv environment variables file
 .env
 /build
-/lib
 .DS_Store
+
+# lib/plugin-update-checker is intentionally vendored (committed) — the plugin
+# requires it at runtime and ships it in the release zip. Do not ignore it.
 
 # Local wp-env core/version overrides (see .wp-env.json for the committed base)
 .wp-env.override.json
