@@ -5,6 +5,7 @@
 	"version": "1.0.0",
 	"title": "Notiblock Message",
 	"category": "notiblock",
+	"parent": [ "notiblock/conditional" ],
 	"icon": "megaphone",
 	"description": "Displays the global notification message configured in the Dashboard widget.",
 	"example": {},
