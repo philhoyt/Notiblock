@@ -34,3 +34,9 @@ node_modules/
 
 # Local wp-env core/version overrides (see .wp-env.json for the committed base)
 .wp-env.override.json
+
+# Local audit/scoping notes
+plans/
+
+# Composer
+/vendor/

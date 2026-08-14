@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<ruleset name="Notiblock">
+	<description>Coding standards for the Notiblock plugin.</description>
+
+	<rule ref="WordPress"/>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+
+	<file>.</file>
+
+	<exclude-pattern>vendor/*</exclude-pattern>
+	<exclude-pattern>node_modules/*</exclude-pattern>
+	<exclude-pattern>build/*</exclude-pattern>
+	<exclude-pattern>lib/*</exclude-pattern>
+	<exclude-pattern>*.asset.php</exclude-pattern>
+
+	<!-- Matches "Requires at least" in the plugin header. -->
+	<config name="minimum_wp_version" value="6.7"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array" value="notiblock"/>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array" value="notiblock,NOTIBLOCK"/>
+		</properties>
+	</rule>
+</ruleset>
