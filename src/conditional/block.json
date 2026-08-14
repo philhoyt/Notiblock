@@ -2,15 +2,14 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "notiblock/conditional",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"title": "Notiblock Conditional",
 	"category": "notiblock",
 	"icon": "visibility",
 	"description": "Wrapper block for conditional notification blocks. Displays the global notification message configured in the Dashboard widget.",
 	"example": {},
 	"supports": {
-		"html": false,
-		"innerBlocks": true
+		"html": false
 	},
 	"textdomain": "notiblock",
 	"editorScript": "file:./index.js",

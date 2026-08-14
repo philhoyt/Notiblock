@@ -7,6 +7,7 @@
  *     $content (string): The block default content.
  *     $block (WP_Block): The block instance.
  *
+ * @package Notiblock
  * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
  */
 

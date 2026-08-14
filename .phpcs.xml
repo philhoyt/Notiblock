@@ -21,13 +21,38 @@
 
 	<rule ref="WordPress.WP.I18n">
 		<properties>
-			<property name="text_domain" type="array" value="notiblock"/>
+			<property name="text_domain" type="array">
+				<element value="notiblock"/>
+			</property>
 		</properties>
 	</rule>
 
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
-			<property name="prefixes" type="array" value="notiblock,NOTIBLOCK"/>
+			<property name="prefixes" type="array">
+				<element value="notiblock"/>
+				<element value="NOTIBLOCK"/>
+			</property>
+		</properties>
+		<!--
+		Block render.php files are require'd inside a closure by core:
+		wp-includes/blocks.php builds
+		  static function ( $attributes, $content, $block ) use ( $template_path ) {
+		      ob_start(); require $template_path; return ob_get_clean();
+		  }
+		so $settings/$content/$is_active are function-scoped, never global.
+		WPCS cannot see through the closure, so this sniff false-positives here.
+		-->
+		<exclude-pattern>*/render.php</exclude-pattern>
+	</rule>
+
+	<rule ref="WordPress.Security.EscapeOutput">
+		<properties>
+			<!-- Returns pre-escaped attribute markup; core's own block
+			     templates echo it directly. -->
+			<property name="customAutoEscapedFunctions" type="array">
+				<element value="get_block_wrapper_attributes"/>
+			</property>
 		</properties>
 	</rule>
 </ruleset>

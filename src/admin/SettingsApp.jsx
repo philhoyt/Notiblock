@@ -100,7 +100,7 @@ export default function SettingsApp() {
 			) }
 
 			{ notice && (
-				<div className={ `notice notice-${ notice.type } inline is-dismissible` }>
+				<div className={ `notice notice-${ notice.type } inline` }>
 					<p>{ notice.text }</p>
 				</div>
 			) }

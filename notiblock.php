@@ -113,8 +113,6 @@ function notiblock_get_settings( $force_refresh = false ) {
 	// Use network-wide or per-site option based on configuration.
 	if ( notiblock_use_network_settings() ) {
 		$settings = get_site_option( 'notiblock_global_notice', $defaults );
-	} elseif ( is_multisite() ) {
-		$settings = get_option( 'notiblock_global_notice', $defaults );
 	} else {
 		$settings = get_option( 'notiblock_global_notice', $defaults );
 	}
