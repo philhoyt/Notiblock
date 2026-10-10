@@ -8,6 +8,9 @@
  * otherwise flag every one of them.
  */
 const defaultConfig = require( '@wordpress/scripts/config/eslint.config.cjs' );
+// globals is a transitive dependency of @wordpress/scripts, not a direct one.
+// eslint-disable-next-line import/no-extraneous-dependencies
+const globals = require( 'globals' );
 
 /**
  * WordPress packages consumed as build-time externals. Keep in sync with the
@@ -44,6 +47,12 @@ module.exports = [
 	...defaultConfig,
 
 	{
+		// The admin app and editor run in the browser.
+		languageOptions: {
+			globals: {
+				...globals.browser,
+			},
+		},
 		settings: {
 			'import/core-modules': WORDPRESS_EXTERNALS,
 		},
