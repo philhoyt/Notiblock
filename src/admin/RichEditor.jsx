@@ -39,7 +39,9 @@ function ToolbarButton( { label, isActive = false, onMouseDown, children } ) {
 	return (
 		<button
 			type="button"
-			className={ `nb-rich-editor__toolbar-btn${ isActive ? ' is-active' : '' }` }
+			className={ `nb-rich-editor__toolbar-btn${
+				isActive ? ' is-active' : ''
+			}` }
 			aria-label={ label }
 			aria-pressed={ isActive }
 			onMouseDown={ ( e ) => {
@@ -54,7 +56,13 @@ function ToolbarButton( { label, isActive = false, onMouseDown, children } ) {
 }
 
 const AlignLeftIcon = () => (
-	<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true">
+	<svg
+		width="14"
+		height="12"
+		viewBox="0 0 14 12"
+		fill="currentColor"
+		aria-hidden="true"
+	>
 		<rect x="0" y="0" width="14" height="2" />
 		<rect x="0" y="4" width="9" height="2" />
 		<rect x="0" y="8" width="14" height="2" />
@@ -62,7 +70,13 @@ const AlignLeftIcon = () => (
 );
 
 const AlignCenterIcon = () => (
-	<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true">
+	<svg
+		width="14"
+		height="12"
+		viewBox="0 0 14 12"
+		fill="currentColor"
+		aria-hidden="true"
+	>
 		<rect x="0" y="0" width="14" height="2" />
 		<rect x="2.5" y="4" width="9" height="2" />
 		<rect x="0" y="8" width="14" height="2" />
@@ -70,7 +84,13 @@ const AlignCenterIcon = () => (
 );
 
 const AlignRightIcon = () => (
-	<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true">
+	<svg
+		width="14"
+		height="12"
+		viewBox="0 0 14 12"
+		fill="currentColor"
+		aria-hidden="true"
+	>
 		<rect x="0" y="0" width="14" height="2" />
 		<rect x="5" y="4" width="9" height="2" />
 		<rect x="0" y="8" width="14" height="2" />
@@ -112,7 +132,13 @@ function getSelectionAlign( sel, editorEl ) {
  * @param {Function}        root0.onChange       Called with normalized HTML on every edit.
  * @param {string}          root0.id             DOM id, so a visible <label> can point at it.
  */
-export default function RichEditor( { placeholder, initialContent = '', editorRef, onChange, id } ) {
+export default function RichEditor( {
+	placeholder,
+	initialContent = '',
+	editorRef,
+	onChange,
+	id,
+} ) {
 	const [ isEmpty, setIsEmpty ] = useState( ! initialContent );
 	const [ currentAlign, setCurrentAlign ] = useState( 'left' );
 	const [ isLinkModalOpen, setIsLinkModalOpen ] = useState( false );
@@ -140,7 +166,11 @@ export default function RichEditor( { placeholder, initialContent = '', editorRe
 			setCurrentAlign( getSelectionAlign( sel, editorRef.current ) );
 		}
 		document.addEventListener( 'selectionchange', onSelectionChange );
-		return () => document.removeEventListener( 'selectionchange', onSelectionChange );
+		return () =>
+			document.removeEventListener(
+				'selectionchange',
+				onSelectionChange
+			);
 	}, [ editorRef ] );
 
 	function handleInput() {
@@ -178,7 +208,9 @@ export default function RichEditor( { placeholder, initialContent = '', editorRe
 	function openLinkModal() {
 		const sel = document.getSelection();
 		savedRangeRef.current =
-			sel && sel.rangeCount > 0 && editorRef.current?.contains( sel.anchorNode )
+			sel &&
+			sel.rangeCount > 0 &&
+			editorRef.current?.contains( sel.anchorNode )
 				? sel.getRangeAt( 0 ).cloneRange()
 				: null;
 
@@ -243,7 +275,10 @@ export default function RichEditor( { placeholder, initialContent = '', editorRe
 					&#128279;
 				</ToolbarButton>
 
-				<span className="nb-rich-editor__toolbar-sep" aria-hidden="true" />
+				<span
+					className="nb-rich-editor__toolbar-sep"
+					aria-hidden="true"
+				/>
 
 				<ToolbarButton
 					label={ __( 'Align left', 'notiblock' ) }

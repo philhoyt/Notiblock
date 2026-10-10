@@ -101,7 +101,10 @@ export default function SettingsApp() {
 			const data = await response.json();
 
 			if ( ! response.ok ) {
-				throw new Error( data.message ?? __( 'Failed to save settings.', 'notiblock' ) );
+				throw new Error(
+					data.message ??
+						__( 'Failed to save settings.', 'notiblock' )
+				);
 			}
 
 			// Update state with whatever the server returned (sanitized values).
@@ -131,7 +134,9 @@ export default function SettingsApp() {
 			{ config.isNetworkWide && (
 				<div className="notice notice-info inline">
 					<p>
-						<strong>{ __( 'Network-wide Mode:', 'notiblock' ) }</strong>{ ' ' }
+						<strong>
+							{ __( 'Network-wide Mode:', 'notiblock' ) }
+						</strong>{ ' ' }
 						{ __(
 							'These settings apply to all sites in the network.',
 							'notiblock'
@@ -148,11 +153,16 @@ export default function SettingsApp() {
 
 			<div className="notiblock-settings__field">
 				<label htmlFor={ EDITOR_ID }>
-					<strong>{ __( 'Notification Message:', 'notiblock' ) }</strong>
+					<strong>
+						{ __( 'Notification Message:', 'notiblock' ) }
+					</strong>
 				</label>
 				<RichEditor
 					id={ EDITOR_ID }
-					placeholder={ __( 'Enter notification message…', 'notiblock' ) }
+					placeholder={ __(
+						'Enter notification message…',
+						'notiblock'
+					) }
 					initialContent={ config.settings?.content ?? '' }
 					editorRef={ editorRef }
 					onChange={ ( html ) => setField( 'content', html ) }
@@ -161,7 +171,9 @@ export default function SettingsApp() {
 
 			<div
 				className={ `notiblock-settings__field${
-					settings.always_show ? ' notiblock-settings__field--disabled' : ''
+					settings.always_show
+						? ' notiblock-settings__field--disabled'
+						: ''
 				}` }
 			>
 				<label htmlFor="nb-start-date">
@@ -177,7 +189,11 @@ export default function SettingsApp() {
 					onChange={ ( e ) => {
 						const newStart = e.target.value;
 						// Clear end date if it's now before the new start date.
-						if ( settings.end_date && newStart && settings.end_date < newStart ) {
+						if (
+							settings.end_date &&
+							newStart &&
+							settings.end_date < newStart
+						) {
 							setSettings( ( prev ) => ( {
 								...prev,
 								start_date: newStart,
@@ -190,13 +206,18 @@ export default function SettingsApp() {
 					className="regular-text"
 				/>
 				<p className="description">
-					{ __( 'Leave empty for no start date restriction.', 'notiblock' ) }
+					{ __(
+						'Leave empty for no start date restriction.',
+						'notiblock'
+					) }
 				</p>
 			</div>
 
 			<div
 				className={ `notiblock-settings__field${
-					settings.always_show ? ' notiblock-settings__field--disabled' : ''
+					settings.always_show
+						? ' notiblock-settings__field--disabled'
+						: ''
 				}` }
 			>
 				<label htmlFor="nb-end-date">
@@ -213,7 +234,10 @@ export default function SettingsApp() {
 					className="regular-text"
 				/>
 				<p className="description">
-					{ __( 'Leave empty for no end date restriction.', 'notiblock' ) }
+					{ __(
+						'Leave empty for no end date restriction.',
+						'notiblock'
+					) }
 				</p>
 			</div>
 
@@ -223,10 +247,13 @@ export default function SettingsApp() {
 						id="nb-always-show"
 						type="checkbox"
 						checked={ settings.always_show }
-						onChange={ ( e ) => setField( 'always_show', e.target.checked ) }
-					/>
-					{ ' ' }
-					<strong>{ __( 'Always show (ignore date range)', 'notiblock' ) }</strong>
+						onChange={ ( e ) =>
+							setField( 'always_show', e.target.checked )
+						}
+					/>{ ' ' }
+					<strong>
+						{ __( 'Always show (ignore date range)', 'notiblock' ) }
+					</strong>
 				</label>
 			</div>
 
@@ -237,15 +264,19 @@ export default function SettingsApp() {
 					} inline notiblock-settings__status` }
 				>
 					<p>
-						<strong>{ __( 'Current Status:', 'notiblock' ) }</strong>{ ' ' }
-						{ isActive ? __( 'Active', 'notiblock' ) : __( 'Inactive', 'notiblock' ) }
+						<strong>
+							{ __( 'Current Status:', 'notiblock' ) }
+						</strong>{ ' ' }
+						{ isActive
+							? __( 'Active', 'notiblock' )
+							: __( 'Inactive', 'notiblock' ) }
 						{ ! settings.always_show &&
 							( settings.start_date || settings.end_date ) && (
-							<>
-								{ ' — ' }
-								{ describePeriod( settings ) }
-							</>
-						) }
+								<>
+									{ ' — ' }
+									{ describePeriod( settings ) }
+								</>
+							) }
 						{ settings.always_show &&
 							` — ${ __(
 								'Always visible (date range ignored)',
@@ -262,7 +293,9 @@ export default function SettingsApp() {
 					disabled={ saving }
 					type="button"
 				>
-					{ saving ? __( 'Saving…', 'notiblock' ) : __( 'Save Settings', 'notiblock' ) }
+					{ saving
+						? __( 'Saving…', 'notiblock' )
+						: __( 'Save Settings', 'notiblock' ) }
 				</button>
 			</div>
 		</div>
