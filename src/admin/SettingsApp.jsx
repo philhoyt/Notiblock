@@ -12,8 +12,8 @@ const EDITOR_ID = 'notiblock-message-editor';
  * Returns true if the notification should currently be active, computed
  * client-side using the WordPress-timezone date passed from the server.
  *
- * @param {Object} settings
- * @return {boolean}
+ * @param {Object} settings Notification settings from the REST endpoint.
+ * @return {boolean} Whether the notification is active right now.
  */
 function computeIsActive( settings ) {
 	if ( settings.always_show ) {
