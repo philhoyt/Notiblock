@@ -7,7 +7,7 @@ module.exports = {
 		const discovered =
 			typeof defaultConfig.entry === 'function'
 				? await defaultConfig.entry()
-				: defaultConfig.entry ?? {};
+				: ( defaultConfig.entry ?? {} );
 
 		return {
 			...discovered,
