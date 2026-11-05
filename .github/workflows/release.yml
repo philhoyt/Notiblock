@@ -73,4 +73,5 @@ jobs:
         with:
           files: |
             notiblock.zip
+            readme.txt
           body_path: changelog_body.txt
