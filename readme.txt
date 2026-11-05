@@ -4,7 +4,7 @@ Tags: block, notification, conditional, dashboard
 Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,9 @@ Yes. Each one displays the same global message and respects the same date settin
 The notification will not display unless "Always show" is checked.
 
 == Changelog ==
+
+= 1.1.1 =
+* Change: Tested against WordPress 7.1 and rebuilt with the current block editor toolchain.
 
 = 1.1.0 =
 * Security: Links added in the message editor are now checked, so unsafe URLs are rejected before they are saved.
