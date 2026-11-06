@@ -29,7 +29,16 @@ if ( file_exists( $notiblock_puc ) ) {
 		__FILE__,
 		'notiblock'
 	);
-	$notiblock_update_checker->getVcsApi()->enableReleaseAssets();
+
+	$notiblock_update_checker_api = $notiblock_update_checker->getVcsApi();
+	if ( method_exists( $notiblock_update_checker_api, 'enableReleaseAssets' ) ) {
+		// Only a .zip asset counts, and a release without one is skipped. The
+		// default PREFER_RELEASE_ASSETS falls back to GitHub's source archive,
+		// which installs as <Repo>-<tag>/ and breaks the plugin directory.
+		// Without the filter the first asset wins, GitHub lists assets by name,
+		// so an asset named ahead of notiblock.zip would be installed (PCLZIP_ERR_BAD_FORMAT).
+		$notiblock_update_checker_api->enableReleaseAssets( '/\.zip$/', $notiblock_update_checker_api::REQUIRE_RELEASE_ASSETS );
+	}
 }
 
 /**
