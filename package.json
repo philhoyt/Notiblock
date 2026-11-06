@@ -1,6 +1,6 @@
 {
 	"name": "notiblock",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"description": "Conditional notification blocks with dashboard widget configuration.",
 	"author": "philhoyt",
 	"license": "GPL-2.0-or-later",

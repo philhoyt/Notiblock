@@ -4,7 +4,7 @@ Tags: block, notification, conditional, dashboard
 Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,6 +63,10 @@ Administrators (`manage_options`), or network administrators in network-wide mod
 1. The Notiblock Settings dashboard widget with the message editor, date fields and current status.
 
 == Changelog ==
+
+= 1.1.2 =
+* Fixed the update checker so it always installs the release zip, not whichever file GitHub lists first.
+* Rewrote the readme files in plain English.
 
 = 1.1.1 =
 * Tested against WordPress 7.1 and rebuilt with the current block editor toolchain.
